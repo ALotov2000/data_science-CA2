@@ -44,6 +44,8 @@ def _initialize_driver() -> webdriver.Chrome:
 def _extract_exchange_rate_from_soup(soup: BeautifulSoup) -> float:
     span = soup.find(class_='SwHCTb')
     if span is None:
+        span = soup.find(class_='curr_totxt')
+    if span is None:
         raise Exception('No exchange rate found by google search')
     return float(span.text.replace(',', ''))
 
