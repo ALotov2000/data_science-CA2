@@ -40,6 +40,7 @@ def do_violin_plots(df: pd.DataFrame, grouping_column: str, n_cols: int, full=Tr
     sample_size = max(df[grouping_column].value_counts().min(), 100)
     grouping_column_str = grouping_column.replace('_', ' ')
 
+    ymin, ymax = df['Salary_in_USD'].min(), df['Salary_in_USD'].max()
     n_rows = (n_values + n_cols - 1) // n_cols
     plt.figure(figsize=(8 * n_cols, 8 * n_rows))
     for i, (label, group) in enumerate(df.groupby(grouping_column)):
@@ -48,6 +49,7 @@ def do_violin_plots(df: pd.DataFrame, grouping_column: str, n_cols: int, full=Tr
         plt.subplot(n_rows, n_cols, i + 1)
         plt.violinplot(data)
         plt.xlabel('Salary')
+        plt.ylim(ymin, ymax)
         plt.title(f'Salary Distribution of {grouping_column_str}={label}')
     plt.show()
 
