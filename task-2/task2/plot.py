@@ -4,15 +4,16 @@ import pandas as pd
 from scipy.stats import norm, lognorm
 
 
-def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: int):
+def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: int, full=True):
     n_values = len(df[grouping_column].unique())
+    sample_size = max(df[grouping_column].value_counts().min(), 1000)
     grouping_column_str = grouping_column.replace('_', ' ')
 
     plt.figure()
     plt.title(f'Salary Distribution of Different {grouping_column_str}s')
     for label, group in df.groupby(grouping_column):
-        data = group['Salary_in_USD']
-        plt.hist(data, bins=20, alpha=0.5, edgecolor='black', label=label)
+        data = group['Salary_in_USD'] if full else get_samples(group['Salary_in_USD'], sample_size)
+        plt.hist(data, bins=20, alpha=0.2, edgecolor='black', label=label)
         plt.legend()
         plt.xlabel('Salary')
     xmin, xmax = plt.xlim()
@@ -20,9 +21,9 @@ def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: i
     n_rows = (n_values + n_cols - 1) // n_cols
     plt.figure(figsize=(8 * n_cols, 8 * n_rows))
     for i, (label, group) in enumerate(df.groupby(grouping_column)):
-        data = group['Salary_in_USD']
+        data = group['Salary_in_USD'] if full else get_samples(group['Salary_in_USD'], sample_size)
         plt.subplot(n_rows, n_cols, i + 1)
-        plt.hist(data, bins=20, alpha=0.5, edgecolor='black')
+        plt.hist(data, bins=20, edgecolor='black')
         plot_fitted_normal(data, n_bins)
         plot_fitted_lognormal(data, n_bins)
         plt.xlim(xmin, xmax)
@@ -33,13 +34,15 @@ def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: i
     plt.show()
 
 
-def do_violin_plots(df: pd.DataFrame, grouping_column: str, n_cols: int):
+def do_violin_plots(df: pd.DataFrame, grouping_column: str, n_cols: int, full=True):
     n_values = len(df[grouping_column].unique())
+    sample_size = max(df[grouping_column].value_counts().min(), 1000)
     grouping_column_str = grouping_column.replace('_', ' ')
 
     n_rows = (n_values + n_cols - 1) // n_cols
     plt.figure(figsize=(8 * n_cols, 8 * n_rows))
     for i, (label, group) in enumerate(df.groupby(grouping_column)):
+        data = group['Salary_in_USD'] if full else get_samples(group['Salary_in_USD'], sample_size)
         data = group['Salary_in_USD']
         plt.subplot(n_rows, n_cols, i + 1)
         plt.violinplot(data)
@@ -94,3 +97,20 @@ def plot_fitted_lognormal(data: pd.Series | np.ndarray, n_bins: int, dx=1000):
         * ((xmax - xmin) / n_bins) \
         * (1 / (y.sum() * dx))
     plt.plot(x, z, label="log normal", linewidth=2, color='maroon')
+
+
+def get_samples(data: pd.Series | np.ndarray, sample_size: int):
+    if data.count() > sample_size:
+        return pd.Series(np.random.choice(data, size=sample_size, replace=False))
+    else:
+        return_value = pd.concat([
+            data,
+            pd.Series(
+                np.random.normal(
+                    loc=data.mean(),
+                    scale=data.std(),
+                    size=(sample_size - data.count())
+                )
+            )
+        ])
+        return return_value[return_value > 0]
