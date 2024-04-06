@@ -6,14 +6,14 @@ from scipy.stats import norm, lognorm
 
 def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: int, full=True):
     n_values = len(df[grouping_column].unique())
-    sample_size = max(df[grouping_column].value_counts().min(), 1000)
+    sample_size = max(df[grouping_column].value_counts().min(), 100)
     grouping_column_str = grouping_column.replace('_', ' ')
 
     plt.figure()
     plt.title(f'Salary Distribution of Different {grouping_column_str}s')
     for label, group in df.groupby(grouping_column):
         data = group['Salary_in_USD'] if full else get_samples(group['Salary_in_USD'], sample_size)
-        plt.hist(data, bins=20, alpha=0.2, edgecolor='black', label=label)
+        plt.hist(data, bins=n_bins, alpha=0.2, edgecolor='black', label=label)
         plt.legend()
         plt.xlabel('Salary')
     xmin, xmax = plt.xlim()
@@ -23,11 +23,12 @@ def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: i
     for i, (label, group) in enumerate(df.groupby(grouping_column)):
         data = group['Salary_in_USD'] if full else get_samples(group['Salary_in_USD'], sample_size)
         plt.subplot(n_rows, n_cols, i + 1)
-        plt.hist(data, bins=20, edgecolor='black')
+        plt.hist(data, bins=n_bins, edgecolor='black')
         plot_fitted_normal(data, n_bins)
         plot_fitted_lognormal(data, n_bins)
         plt.xlim(xmin, xmax)
-        plt.ylim(ymin, ymax)
+        _ymin, _ymax = plt.ylim()
+        plt.ylim(min(ymin, _ymin), max(ymax, _ymax))
         plt.xlabel('Salary')
         plt.title(f'Salary Distribution of {grouping_column_str}={label}')
         plt.legend()
@@ -36,7 +37,7 @@ def do_histograms(df: pd.DataFrame, grouping_column: str, n_cols: int, n_bins: i
 
 def do_violin_plots(df: pd.DataFrame, grouping_column: str, n_cols: int, full=True):
     n_values = len(df[grouping_column].unique())
-    sample_size = max(df[grouping_column].value_counts().min(), 1000)
+    sample_size = max(df[grouping_column].value_counts().min(), 100)
     grouping_column_str = grouping_column.replace('_', ' ')
 
     n_rows = (n_values + n_cols - 1) // n_cols
